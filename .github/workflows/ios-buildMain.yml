@@ -1,0 +1,113 @@
+name: Build Fake Calculator App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Replace App Icon
+        run: |
+          mkdir -p ElementX/Resources/Assets.xcassets/AppIcon.appiconset/
+          cp Assets/CalculatorIcon.png ElementX/Resources/Assets.xcassets/AppIcon.appiconset/
+
+      - name: Change App Name to "Calculator"
+        run: |
+          plutil -replace CFBundleDisplayName -string "Calculator" ElementX/SupportingFiles/Info.plist
+          plutil -replace CFBundleName -string "Calculator" ElementX/SupportingFiles/Info.plist
+
+      - name: Replace Launch Screen
+        run: |
+          mkdir -p ElementX/Resources/LaunchScreen/
+          cp Assets/CalculatorLaunch.png ElementX/Resources/LaunchScreen/LaunchScreen.png
+
+      - name: Modify PIN Screen
+        run: |
+          mkdir -p ElementX/Sources/Authentication
+          rm -f ElementX/Sources/Authentication/PasscodeViewController.swift
+          cat <<EOF > ElementX/Sources/Authentication/PasscodeViewController.swift
+          import UIKit
+
+          class CalculatorPasscodeViewController: UIViewController {
+              var enteredPIN = ""
+              let correctPIN = "1234"
+
+              override func viewDidLoad() {
+                  super.viewDidLoad()
+                  setupCalculatorUI()
+              }
+
+              func setupCalculatorUI() {
+                  self.view.backgroundColor = .white
+                  let titleLabel = UILabel()
+                  titleLabel.text = "计算器"
+                  titleLabel.font = UIFont.systemFont(ofSize: 32, weight: .bold)
+                  titleLabel.textAlignment = .center
+                  titleLabel.frame = CGRect(x: 0, y: 100, width: self.view.frame.width, height: 50)
+                  self.view.addSubview(titleLabel)
+              }
+
+              @objc func buttonTapped(_ sender: UIButton) {
+                  guard let input = sender.titleLabel?.text else { return }
+                  
+                  if input == "C" {
+                      enteredPIN = ""
+                  } else if input == "↵" {
+                      checkPIN()
+                  } else {
+                      enteredPIN.append(input)
+                  }
+              }
+
+              func checkPIN() {
+                  if enteredPIN == correctPIN {
+                      unlockElement()
+                  } else {
+                      enteredPIN = ""
+                  }
+              }
+
+              func unlockElement() {
+                  print("✅ PIN 正确，进入 Element")
+              }
+          }
+          EOF
+
+      - name: Install Dependencies
+        run: |
+          brew install cocoapods
+          cd ElementX
+          pod install
+
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
+
+      - name: Build iOS App
+        run: |
+          xcodebuild -workspace Element.xcworkspace \
+            -scheme Element \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath $GITHUB_WORKSPACE/build/Element.xcarchive \
+            archive
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $GITHUB_WORKSPACE/build/Element.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath $GITHUB_WORKSPACE/build/
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fake-calculator-ios
+          path: build/*.ipa
