@@ -14,12 +14,8 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Replace App Icon
-        run: |
-          mkdir -p ElementX/Resources/Assets.xcassets/AppIcon.appiconset/
-          cp Assets/CalculatorIcon.png ElementX/Resources/Assets.xcassets/AppIcon.appiconset/
 
-      - name: Change App Name to "Calculator"
+      - name: Change App Name to "計算機"
         run: |
           plutil -replace CFBundleDisplayName -string "Calculator" ElementX/SupportingFiles/Info.plist
           plutil -replace CFBundleName -string "Calculator" ElementX/SupportingFiles/Info.plist
