@@ -1,4 +1,4 @@
-name: Build Fake Calculator App
+name: Build Fake Calculator iosApp
 
 on:
   push:
