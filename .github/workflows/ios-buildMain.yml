@@ -14,12 +14,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-
-      - name: Change App Name to "計算機"
-        run: |
-          plutil -replace CFBundleDisplayName -string "Calculator" ElementX/SupportingFiles/Info.plist
-          plutil -replace CFBundleName -string "Calculator" ElementX/SupportingFiles/Info.plist
-
       - name: Replace Launch Screen
         run: |
           mkdir -p ElementX/Resources/LaunchScreen/
